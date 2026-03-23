@@ -40,7 +40,22 @@
 | 공모주 데이터 | 38커뮤니케이션 크롤링 |
 | 엑셀 | openpyxl |
 
-## 설치 및 실행
+## 다운로드
+
+[Releases](https://github.com/ssongjay/gongmoju-tracker/releases/latest) 페이지에서 OS에 맞는 파일을 다운로드하세요.
+
+| OS | 파일 | 실행 방법 |
+|----|------|-----------|
+| **macOS** | `공모주트래커-mac.zip` | 압축 해제 → `공모주트래커.app` 더블클릭 |
+| **Windows** | `공모주트래커-windows.zip` | 압축 해제 → `공모주트래커.exe` 더블클릭 |
+
+> **macOS** — "확인되지 않은 개발자" 경고가 뜨면 우클릭 → 열기
+>
+> **Windows** — SmartScreen 경고가 뜨면 "추가 정보" → "실행" 클릭
+
+데스크탑 앱은 별도 서버 배포 없이 로컬에서 바로 실행됩니다.
+
+## 소스에서 직접 실행
 
 ```bash
 # 클론
@@ -58,7 +73,7 @@ python main.py
 
 브라우저에서 `http://localhost:8000` 접속
 
-> 같은 네트워크에서 가족이 접속하려면 `http://[컴퓨터IP]:8000`
+> 같은 네트워크에서 접속하려면 `http://[컴퓨터IP]:8000`
 
 ## 사용법
 
@@ -71,7 +86,9 @@ python main.py
 
 ## 데이터 저장
 
-모든 데이터는 프로젝트 폴더의 `gongmoju.db` (SQLite) 파일에 저장됩니다.
+- **데스크탑 앱**: `~/.gongmoju-tracker/gongmoju.db`에 저장 (앱을 삭제해도 데이터 유지)
+- **소스 실행**: 프로젝트 폴더의 `gongmoju.db`에 저장
+
 이 파일만 백업하면 데이터가 보존됩니다.
 
 ## 라이선스
