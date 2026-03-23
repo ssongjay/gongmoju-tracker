@@ -1,7 +1,18 @@
 import sqlite3
+import sys
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "gongmoju.db")
+
+def _get_db_path():
+    if getattr(sys, 'frozen', False):
+        # 앱 번들일 때: 사용자 홈 폴더에 저장 (데이터 유지)
+        data_dir = os.path.join(os.path.expanduser("~"), ".gongmoju-tracker")
+        os.makedirs(data_dir, exist_ok=True)
+        return os.path.join(data_dir, "gongmoju.db")
+    return os.path.join(os.path.dirname(__file__), "gongmoju.db")
+
+
+DB_PATH = _get_db_path()
 
 
 def get_db():

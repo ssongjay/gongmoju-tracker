@@ -1,15 +1,23 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+import sys
 import os
 
 from database import init_db
 from api import router as api_router
 
+
+def get_base_dir():
+    if getattr(sys, 'frozen', False):
+        return sys._MEIPASS
+    return os.path.dirname(__file__)
+
+
 app = FastAPI(title="공모주 트래커")
 app.include_router(api_router, prefix="/api")
 
-static_dir = os.path.join(os.path.dirname(__file__), "static")
+static_dir = os.path.join(get_base_dir(), "static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
