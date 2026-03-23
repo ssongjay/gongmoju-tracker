@@ -9,7 +9,7 @@ from scraper import fetch_ipo_list
 
 router = APIRouter()
 
-CURRENT_VERSION = "1.0.0"
+CURRENT_VERSION = "1.1.0"
 GITHUB_REPO = "ssongjay/gongmoju-tracker"
 
 

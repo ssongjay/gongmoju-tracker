@@ -9,7 +9,7 @@ import uvicorn
 from main import app
 from database import init_db
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 
 
 def get_resource_path(relative_path):
