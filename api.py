@@ -9,6 +9,9 @@ from scraper import fetch_ipo_list
 
 router = APIRouter()
 
+CURRENT_VERSION = "1.0.0"
+GITHUB_REPO = "ssongjay/gongmoju-tracker"
+
 
 # --- Models ---
 
@@ -142,6 +145,32 @@ def delete_record(record_id: int):
     db.commit()
     db.close()
     return {"ok": True}
+
+
+# --- Update Check ---
+
+@router.get("/check-update")
+def check_update():
+    import requests
+    try:
+        r = requests.get(
+            f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest",
+            timeout=5,
+        )
+        if r.status_code != 200:
+            return {"update_available": False}
+        data = r.json()
+        latest = data.get("tag_name", "").lstrip("v")
+        if latest and latest != CURRENT_VERSION:
+            return {
+                "update_available": True,
+                "latest_version": latest,
+                "current_version": CURRENT_VERSION,
+                "download_url": data.get("html_url", ""),
+            }
+    except Exception:
+        pass
+    return {"update_available": False, "current_version": CURRENT_VERSION}
 
 
 # --- Stats ---

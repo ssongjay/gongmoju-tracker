@@ -390,6 +390,20 @@
             font-size: 14px;
         }
 
+        /* Update banner */
+        .update-banner {
+            display: none;
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px 20px;
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 1px solid #ffc107;
+        }
+        .update-banner:hover { background: #ffe69c; }
+        .update-banner a { color: #856404; font-weight: 700; text-decoration: underline; }
+
         /* Responsive */
         @media (min-width: 600px) {
             .stats { grid-template-columns: repeat(3, 1fr); }
@@ -398,6 +412,7 @@
     </style>
 </head>
 <body>
+    <div class="update-banner" id="updateBanner"></div>
     <div class="header">
         <div class="header-row">
             <h1>공모주 트래커</h1>
@@ -947,10 +962,24 @@
             return n.toLocaleString('ko-KR');
         }
 
+        // --- Update Check ---
+        async function checkUpdate() {
+            try {
+                const data = await api('/check-update');
+                if (data.update_available) {
+                    const banner = document.getElementById('updateBanner');
+                    banner.innerHTML = `새 버전 v${data.latest_version}이 있습니다. <a href="${data.download_url}" target="_blank">다운로드</a>`;
+                    banner.style.display = 'block';
+                    banner.onclick = () => window.open(data.download_url, '_blank');
+                }
+            } catch {}
+        }
+
         // --- Init ---
         loadMembers();
         loadRecords();
         loadStats();
+        checkUpdate();
     </script>
 </body>
 </html>
