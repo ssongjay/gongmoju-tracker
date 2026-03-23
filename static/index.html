@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>공모주 트래커</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #4472C4;
+            --primary-dark: #3461B0;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --bg: #f5f7fa;
+            --card: #ffffff;
+            --text: #333333;
+            --text-light: #888888;
+            --border: #e0e0e0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header h1 { font-size: 20px; font-weight: 700; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; }
+        .header-actions { display: flex; gap: 8px; }
+        .header-actions button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* Member tabs */
+        .member-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            overflow-x: auto;
+            background: white;
+            border-bottom: 1px solid var(--border);
+        }
+        .member-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .member-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .member-tab.add-btn {
+            border-style: dashed;
+            color: var(--text-light);
+        }
+
+        /* Stats cards */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 16px 20px;
+        }
+        .stat-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .stat-card .label { font-size: 11px; color: var(--text-light); margin-bottom: 4px; }
+        .stat-card .value { font-size: 18px; font-weight: 700; }
+        .stat-card .value.profit { color: var(--danger); }
+        .stat-card .value.loss { color: var(--primary); }
+
+        /* Records list */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px 8px;
+        }
+        .section-header h2 { font-size: 16px; font-weight: 600; }
+        .sort-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+        .sort-btn.active { border-color: var(--primary); color: var(--primary); font-weight: 600; }
+
+        .records { padding: 0 20px; }
+        .record-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            position: relative;
+        }
+        .record-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .record-stock { font-size: 16px; font-weight: 600; }
+        .record-broker {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+        .record-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-allocated { background: #e8f5e9; color: var(--success); }
+        .badge-not-allocated { background: #f5f5f5; color: var(--text-light); }
+
+        .record-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .record-detail .label { font-size: 11px; color: var(--text-light); }
+        .record-detail .value { font-size: 14px; font-weight: 600; margin-top: 2px; }
+
+        .record-profit {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .profit-positive { background: #ffebee; color: var(--danger); }
+        .profit-negative { background: #e3f2fd; color: var(--primary); }
+        .profit-none { background: #f5f5f5; color: var(--text-light); font-weight: 400; font-size: 13px; }
+
+        .record-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .record-actions button {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: white;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .record-actions .delete-btn { color: var(--danger); border-color: var(--danger); }
+
+        .record-memo {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(68,114,196,0.4);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 24px 20px 40px;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .modal h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 6px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--primary);
+        }
+        .form-group textarea {
+            resize: none;
+            height: 60px;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .toggle-btn.active-yes {
+            border-color: var(--success);
+            background: #e8f5e9;
+            color: var(--success);
+        }
+        .toggle-btn.active-no {
+            border-color: var(--danger);
+            background: #ffebee;
+            color: var(--danger);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state p { font-size: 14px; }
+
+        /* IPO picker */
+        .ipo-picker { margin-bottom: 16px; }
+        .ipo-picker-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .ipo-picker-toggle button {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .ipo-picker-toggle button.active {
+            border-color: var(--primary);
+            background: #e8f0fe;
+            color: var(--primary);
+        }
+        .ipo-list {
+            max-height: 240px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+        .ipo-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .ipo-item:last-child { border-bottom: none; }
+        .ipo-item:hover { background: #f0f4ff; }
+        .ipo-item.selected { background: #e8f0fe; border-left: 3px solid var(--primary); }
+        .ipo-item-name { font-weight: 600; font-size: 14px; }
+        .ipo-item-info {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 3px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .ipo-item-info span {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .broker-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .broker-chip {
+            padding: 8px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .broker-chip.selected {
+            border-color: var(--primary);
+            background: #e8f0fe;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .loading-spinner {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (min-width: 600px) {
+            .stats { grid-template-columns: repeat(3, 1fr); }
+            .record-details { grid-template-columns: repeat(4, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-row">
+            <h1>공모주 트래커</h1>
+            <div class="header-actions">
+                <button onclick="exportExcel()">엑셀</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="member-tabs" id="memberTabs"></div>
+
+    <div class="stats" id="statsArea"></div>
+
+    <div class="section-header">
+        <h2>청약 기록</h2>
+        <div style="display:flex; gap:6px;">
+            <button class="sort-btn active" id="sortNewest" onclick="setSortMode('newest')">최신순</button>
+            <button class="sort-btn" id="sortSellDate" onclick="setSortMode('sell_date')">매도일순</button>
+        </div>
+    </div>
+    <div class="records" id="recordsList"></div>
+
+    <button class="fab" onclick="openModal()">+</button>
+
+    <!-- Add Record Modal -->
+    <div class="modal-overlay" id="recordModal">
+        <div class="modal">
+            <h3 id="modalTitle">공모주 기록 추가</h3>
+            <input type="hidden" id="editRecordId">
+
+            <!-- Input mode toggle -->
+            <div class="ipo-picker" id="ipoPickerSection">
+                <div class="ipo-picker-toggle">
+                    <button id="modePickBtn" class="active" onclick="setInputMode('pick')">최근 공모주에서 선택</button>
+                    <button id="modeManualBtn" onclick="setInputMode('manual')">직접 입력</button>
+                </div>
+
+                <!-- Pick mode: IPO list -->
+                <div id="pickMode">
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <input type="text" id="ipoSearchInput" placeholder="종목명 검색..." oninput="filterIpoList()">
+                    </div>
+                    <div id="ipoListContainer" class="ipo-list">
+                        <div class="loading-spinner">공모주 목록 불러오는 중...</div>
+                    </div>
+                </div>
+
+                <!-- Manual mode -->
+                <div id="manualMode" style="display:none;">
+                    <div class="form-group">
+                        <label>종목명</label>
+                        <input type="text" id="stockNameManual" placeholder="예: 삼성바이오로직스">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>증권사</label>
+                <div id="brokerChipsContainer" class="broker-chips" style="display:none;"></div>
+                <select id="broker" style="display:none;">
+                    <option value="">선택하세요</option>
+                    <option value="한국투자증권">한국투자증권</option>
+                    <option value="미래에셋증권">미래에셋증권</option>
+                    <option value="신한투자증권">신한투자증권</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>공모가 (원)</label>
+                <input type="number" id="ipoPrice" placeholder="예: 30000">
+            </div>
+            <div class="form-group">
+                <label>배정 여부</label>
+                <div class="toggle-group">
+                    <button class="toggle-btn" id="allocYes" onclick="setAllocated(true)">배정됨</button>
+                    <button class="toggle-btn" id="allocNo" onclick="setAllocated(false)">미배정</button>
+                </div>
+            </div>
+            <div id="allocatedFields" style="display:none;">
+                <div class="form-group">
+                    <label>배정 수량 (주)</label>
+                    <input type="number" id="allocQty" placeholder="예: 10">
+                </div>
+                <div class="form-group">
+                    <label>매도가 (원) - 아직 안 팔았으면 비워두세요</label>
+                    <input type="number" id="sellPrice" placeholder="예: 45000">
+                </div>
+                <div class="form-group">
+                    <label>매도일</label>
+                    <input type="date" id="sellDate">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>메모</label>
+                <textarea id="memo" placeholder="메모 (선택)"></textarea>
+            </div>
+            <button class="btn-submit" onclick="submitRecord()">저장</button>
+            <button class="btn-submit" style="background: #999; margin-top: 8px;" onclick="closeModal()">취소</button>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div class="modal-overlay" id="memberModal">
+        <div class="modal">
+            <h3>가족 구성원 추가</h3>
+            <div class="form-group">
+                <label>이름</label>
+                <input type="text" id="memberName" placeholder="예: 홍길동">
+            </div>
+            <button class="btn-submit" onclick="addMember()">추가</button>
+            <button class="btn-submit" style="background: #999; margin-top: 8px;" onclick="closeMemberModal()">취소</button>
+        </div>
+    </div>
+
+    <script>
+        let currentMemberId = null;
+        let isAllocated = null;
+        let sortMode = 'newest';
+        let ipoListCache = [];
+        let ipoCurrentPage = 1;
+        let ipoLoading = false;
+        let selectedIpo = null;
+        let selectedBroker = null;
+        let inputMode = 'pick';
+
+        // --- API helpers ---
+        async function api(path, opts = {}) {
+            const res = await fetch('/api' + path, {
+                headers: { 'Content-Type': 'application/json' },
+                ...opts,
+            });
+            return res.json();
+        }
+
+        // --- Members ---
+        async function loadMembers() {
+            const members = await api('/members');
+            const tabs = document.getElementById('memberTabs');
+            tabs.innerHTML = '';
+
+            // "전체" tab
+            const allTab = document.createElement('button');
+            allTab.className = 'member-tab' + (currentMemberId === null ? ' active' : '');
+            allTab.textContent = '전체';
+            allTab.onclick = () => { currentMemberId = null; loadMembers(); loadRecords(); loadStats(); };
+            tabs.appendChild(allTab);
+
+            members.forEach(m => {
+                const tab = document.createElement('button');
+                tab.className = 'member-tab' + (currentMemberId === m.id ? ' active' : '');
+                tab.textContent = m.name;
+                tab.onclick = () => { currentMemberId = m.id; loadMembers(); loadRecords(); loadStats(); };
+                tab.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    if (confirm(`"${m.name}" 구성원을 삭제할까요? 모든 기록도 삭제됩니다.`)) {
+                        api(`/members/${m.id}`, { method: 'DELETE' }).then(() => {
+                            if (currentMemberId === m.id) currentMemberId = null;
+                            loadMembers(); loadRecords(); loadStats();
+                        });
+                    }
+                };
+                tabs.appendChild(tab);
+            });
+
+            const addTab = document.createElement('button');
+            addTab.className = 'member-tab add-btn';
+            addTab.textContent = '+ 추가';
+            addTab.onclick = () => { document.getElementById('memberModal').classList.add('active'); };
+            tabs.appendChild(addTab);
+        }
+
+        async function addMember() {
+            const name = document.getElementById('memberName').value.trim();
+            if (!name) return alert('이름을 입력하세요.');
+            await api('/members', { method: 'POST', body: JSON.stringify({ name }) });
+            document.getElementById('memberName').value = '';
+            closeMemberModal();
+            loadMembers();
+        }
+
+        function closeMemberModal() {
+            document.getElementById('memberModal').classList.remove('active');
+        }
+
+        // --- Stats ---
+        async function loadStats() {
+            const params = currentMemberId ? `?member_id=${currentMemberId}` : '';
+            const s = await api('/stats' + params);
+            document.getElementById('statsArea').innerHTML = `
+                <div class="stat-card">
+                    <div class="label">청약 건수</div>
+                    <div class="value">${s.total_applied}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">배정 (배정률)</div>
+                    <div class="value">${s.total_allocated} <span style="font-size:12px;color:var(--text-light)">(${s.allocation_rate}%)</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">총 수익</div>
+                    <div class="value ${s.total_profit >= 0 ? 'profit' : 'loss'}">${formatMoney(s.total_profit)}원</div>
+                </div>
+            `;
+        }
+
+        // --- Sort ---
+        function setSortMode(mode) {
+            sortMode = mode;
+            document.getElementById('sortNewest').className = 'sort-btn' + (mode === 'newest' ? ' active' : '');
+            document.getElementById('sortSellDate').className = 'sort-btn' + (mode === 'sell_date' ? ' active' : '');
+            loadRecords();
+        }
+
+        // --- Records ---
+        async function loadRecords() {
+            const params = currentMemberId ? `?member_id=${currentMemberId}` : '';
+            const records = await api('/records' + params);
+
+            if (sortMode === 'sell_date') {
+                records.sort((a, b) => {
+                    if (!a.sell_date && !b.sell_date) return 0;
+                    if (!a.sell_date) return 1;
+                    if (!b.sell_date) return -1;
+                    return b.sell_date.localeCompare(a.sell_date);
+                });
+            }
+
+            const list = document.getElementById('recordsList');
+
+            if (records.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📋</div>
+                        <p>아직 기록이 없습니다.<br>+ 버튼으로 공모주 기록을 추가해보세요.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = records.map(r => {
+                const profit = r.allocated && r.sell_price && r.allocated_qty > 0
+                    ? (r.sell_price - r.ipo_price) * r.allocated_qty
+                    : null;
+                const profitRate = profit !== null && r.ipo_price > 0
+                    ? ((r.sell_price - r.ipo_price) / r.ipo_price * 100).toFixed(1)
+                    : null;
+
+                let profitHtml = '';
+                if (r.allocated && !r.sell_price) {
+                    profitHtml = `<div class="record-profit profit-none">매도 전</div>`;
+                } else if (profit !== null) {
+                    const cls = profit >= 0 ? 'profit-positive' : 'profit-negative';
+                    profitHtml = `<div class="record-profit ${cls}">${profit >= 0 ? '+' : ''}${formatMoney(profit)}원 (${profitRate}%)</div>`;
+                }
+
+                return `
+                    <div class="record-card">
+                        <div class="record-top">
+                            <div>
+                                <div class="record-stock">${r.stock_name}</div>
+                                <div class="record-broker">${r.broker}${currentMemberId === null ? ' · ' + r.member_name : ''}</div>
+                            </div>
+                            <span class="record-badge ${r.allocated ? 'badge-allocated' : 'badge-not-allocated'}">
+                                ${r.allocated ? '배정' : '미배정'}
+                            </span>
+                        </div>
+                        <div class="record-details">
+                            <div class="record-detail">
+                                <div class="label">공모가</div>
+                                <div class="value">${formatMoney(r.ipo_price)}원</div>
+                            </div>
+                            ${r.allocated ? `
+                            <div class="record-detail">
+                                <div class="label">배정수량</div>
+                                <div class="value">${r.allocated_qty}주</div>
+                            </div>
+                            <div class="record-detail">
+                                <div class="label">매도가</div>
+                                <div class="value">${r.sell_price ? formatMoney(r.sell_price) + '원' : '-'}</div>
+                            </div>
+                            <div class="record-detail">
+                                <div class="label">매도일</div>
+                                <div class="value">${r.sell_date || '-'}</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ${profitHtml}
+                        ${r.memo ? `<div class="record-memo">${r.memo}</div>` : ''}
+                        <div class="record-actions">
+                            <button onclick="editRecord(${r.id}, ${JSON.stringify(JSON.stringify(r))})">수정</button>
+                            <button class="delete-btn" onclick="deleteRecord(${r.id})">삭제</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- IPO Picker ---
+        async function loadIpoList(page = 1) {
+            if (page === 1 && ipoListCache.length > 0) return ipoListCache;
+            try {
+                const data = await api(`/ipo-list?page=${page}`);
+                if (page === 1) {
+                    ipoListCache = data;
+                } else {
+                    ipoListCache = [...ipoListCache, ...data];
+                }
+                ipoCurrentPage = page;
+            } catch {
+                if (page === 1) ipoListCache = [];
+            }
+            return ipoListCache;
+        }
+
+        function filterIpoList() {
+            const query = document.getElementById('ipoSearchInput').value.trim().toLowerCase();
+            if (!query) {
+                renderIpoList(ipoListCache);
+                return;
+            }
+            const filtered = ipoListCache.filter(ipo =>
+                ipo.stock_name.toLowerCase().includes(query)
+            );
+            renderIpoList(filtered);
+        }
+
+        async function loadMoreIpo() {
+            if (ipoLoading) return;
+            ipoLoading = true;
+            const btn = document.getElementById('loadMoreBtn');
+            if (btn) btn.textContent = '불러오는 중...';
+            await loadIpoList(ipoCurrentPage + 1);
+            renderIpoList(ipoListCache);
+            ipoLoading = false;
+        }
+
+        function renderIpoList(list) {
+            const container = document.getElementById('ipoListContainer');
+            if (list.length === 0) {
+                const query = document.getElementById('ipoSearchInput').value.trim();
+                container.innerHTML = query
+                    ? '<div class="loading-spinner">검색 결과가 없습니다. 더 불러온 후 다시 검색해보세요.</div>'
+                    : '<div class="loading-spinner">공모주 목록을 불러올 수 없습니다.</div>';
+                return;
+            }
+            container.innerHTML = list.map((ipo) => {
+                const cacheIdx = ipoListCache.indexOf(ipo);
+                return `
+                <div class="ipo-item ${selectedIpo && selectedIpo.stock_name === ipo.stock_name ? 'selected' : ''}"
+                     onclick="selectIpo(${cacheIdx})">
+                    <div class="ipo-item-name">${ipo.stock_name}</div>
+                    <div class="ipo-item-info">
+                        <span>${ipo.schedule}</span>
+                        <span>${ipo.confirmed_price && ipo.confirmed_price !== '-' ? ipo.confirmed_price + '원' : ipo.hoped_price}</span>
+                        ${ipo.competition_rate ? '<span>' + ipo.competition_rate + '</span>' : ''}
+                    </div>
+                </div>`;
+            }).join('')
+            + `<div class="ipo-item" style="text-align:center; color:var(--primary); font-weight:600;" onclick="loadMoreIpo()" id="loadMoreBtn">
+                 이전 공모주 더 불러오기
+               </div>`;
+        }
+
+        function selectIpo(idx) {
+            const ipo = ipoListCache[idx];
+            selectedIpo = ipo;
+            selectedBroker = null;
+
+            // Update IPO list selection UI
+            renderIpoList(ipoListCache);
+
+            // Fill price
+            document.getElementById('ipoPrice').value = ipo.ipo_price || '';
+
+            // Show broker chips
+            renderBrokerChips(ipo.brokers);
+        }
+
+        function renderBrokerChips(brokers) {
+            const container = document.getElementById('brokerChipsContainer');
+            const select = document.getElementById('broker');
+
+            if (brokers && brokers.length > 0) {
+                container.style.display = 'flex';
+                select.style.display = 'none';
+                container.innerHTML = brokers.map(b => `
+                    <button class="broker-chip ${selectedBroker === b ? 'selected' : ''}"
+                            onclick="selectBroker('${b}')">${b}</button>
+                `).join('');
+            } else {
+                container.style.display = 'none';
+                select.style.display = 'block';
+            }
+        }
+
+        function selectBroker(broker) {
+            selectedBroker = broker;
+            renderBrokerChips(selectedIpo ? selectedIpo.brokers : []);
+        }
+
+        function setInputMode(mode) {
+            inputMode = mode;
+            document.getElementById('modePickBtn').className = mode === 'pick' ? 'active' : '';
+            document.getElementById('modeManualBtn').className = mode === 'manual' ? 'active' : '';
+            document.getElementById('pickMode').style.display = mode === 'pick' ? 'block' : 'none';
+            document.getElementById('manualMode').style.display = mode === 'manual' ? 'block' : 'none';
+
+            if (mode === 'manual') {
+                selectedIpo = null;
+                selectedBroker = null;
+                document.getElementById('brokerChipsContainer').style.display = 'none';
+                document.getElementById('broker').style.display = 'block';
+            } else {
+                document.getElementById('broker').style.display = 'none';
+                if (selectedIpo) {
+                    renderBrokerChips(selectedIpo.brokers);
+                }
+            }
+        }
+
+        // --- Modal ---
+        async function openModal() {
+            document.getElementById('editRecordId').value = '';
+            document.getElementById('modalTitle').textContent = '공모주 기록 추가';
+            document.getElementById('ipoPrice').value = '';
+            document.getElementById('allocQty').value = '';
+            document.getElementById('sellPrice').value = '';
+            document.getElementById('sellDate').value = '';
+            document.getElementById('memo').value = '';
+            document.getElementById('stockNameManual').value = '';
+            document.getElementById('broker').value = '';
+            selectedIpo = null;
+            selectedBroker = null;
+            isAllocated = null;
+            document.getElementById('allocYes').className = 'toggle-btn';
+            document.getElementById('allocNo').className = 'toggle-btn';
+            document.getElementById('allocatedFields').style.display = 'none';
+
+            // Show picker section for new records
+            document.getElementById('ipoPickerSection').style.display = 'block';
+            setInputMode('pick');
+
+            document.getElementById('recordModal').classList.add('active');
+
+            document.getElementById('ipoSearchInput').value = '';
+            // Load IPO list (reset cache to get fresh data)
+            ipoListCache = [];
+            ipoCurrentPage = 1;
+            document.getElementById('ipoListContainer').innerHTML = '<div class="loading-spinner">공모주 목록 불러오는 중...</div>';
+            const list = await loadIpoList(1);
+            renderIpoList(list);
+        }
+
+        function closeModal() {
+            document.getElementById('recordModal').classList.remove('active');
+        }
+
+        function setAllocated(val) {
+            isAllocated = val;
+            document.getElementById('allocYes').className = 'toggle-btn' + (val ? ' active-yes' : '');
+            document.getElementById('allocNo').className = 'toggle-btn' + (!val ? ' active-no' : '');
+            document.getElementById('allocatedFields').style.display = val ? 'block' : 'none';
+        }
+
+        function editRecord(id, jsonStr) {
+            const r = JSON.parse(jsonStr);
+            document.getElementById('editRecordId').value = id;
+            document.getElementById('modalTitle').textContent = '기록 수정';
+            // Hide picker for edit mode, show manual input
+            document.getElementById('ipoPickerSection').style.display = 'block';
+            setInputMode('manual');
+            document.getElementById('stockNameManual').value = r.stock_name;
+            document.getElementById('broker').value = r.broker;
+            document.getElementById('broker').style.display = 'block';
+            document.getElementById('brokerChipsContainer').style.display = 'none';
+            document.getElementById('ipoPrice').value = r.ipo_price;
+            document.getElementById('allocQty').value = r.allocated_qty || '';
+            document.getElementById('sellPrice').value = r.sell_price || '';
+            document.getElementById('sellDate').value = r.sell_date || '';
+            document.getElementById('memo').value = r.memo || '';
+            selectedIpo = null;
+            selectedBroker = null;
+            setAllocated(!!r.allocated);
+            document.getElementById('recordModal').classList.add('active');
+        }
+
+        async function submitRecord() {
+            const editId = document.getElementById('editRecordId').value;
+            let stockName, broker;
+            if (inputMode === 'pick' && selectedIpo) {
+                stockName = selectedIpo.stock_name;
+                broker = selectedBroker || '';
+            } else {
+                stockName = document.getElementById('stockNameManual').value.trim();
+                broker = document.getElementById('broker').value;
+            }
+            const ipoPrice = parseInt(document.getElementById('ipoPrice').value);
+            const allocQty = parseInt(document.getElementById('allocQty').value) || 0;
+            const sellPrice = parseInt(document.getElementById('sellPrice').value) || null;
+            const sellDate = document.getElementById('sellDate').value || null;
+            const memo = document.getElementById('memo').value.trim() || null;
+
+            if (!stockName) return alert('종목명을 입력하세요.');
+            if (!broker) return alert('증권사를 선택하세요.');
+            if (!ipoPrice) return alert('공모가를 입력하세요.');
+            if (isAllocated === null) return alert('배정 여부를 선택하세요.');
+
+            const memberId = currentMemberId;
+            if (!memberId && !editId) return alert('구성원을 먼저 선택하세요. (전체 탭에서는 추가할 수 없습니다)');
+
+            const body = {
+                stock_name: stockName,
+                broker,
+                ipo_price: ipoPrice,
+                allocated: isAllocated,
+                allocated_qty: isAllocated ? allocQty : 0,
+                sell_price: isAllocated ? sellPrice : null,
+                sell_date: isAllocated ? sellDate : null,
+                memo,
+            };
+
+            if (editId) {
+                await api(`/records/${editId}`, { method: 'PUT', body: JSON.stringify(body) });
+            } else {
+                body.member_id = memberId;
+                await api('/records', { method: 'POST', body: JSON.stringify(body) });
+            }
+
+            closeModal();
+            loadRecords();
+            loadStats();
+        }
+
+        async function deleteRecord(id) {
+            if (!confirm('이 기록을 삭제할까요?')) return;
+            await api(`/records/${id}`, { method: 'DELETE' });
+            loadRecords();
+            loadStats();
+        }
+
+        // --- Excel ---
+        function exportExcel() {
+            const params = currentMemberId ? `?member_id=${currentMemberId}` : '';
+            window.location.href = '/api/export' + params;
+        }
+
+        // --- Helpers ---
+        function formatMoney(n) {
+            return n.toLocaleString('ko-KR');
+        }
+
+        // --- Init ---
+        loadMembers();
+        loadRecords();
+        loadStats();
+    </script>
+</body>
+</html>
